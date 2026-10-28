@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Login</title>
+  <style>
+    body {
+      font-family: Arial;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      padding: 30px;
+      border-radius: 15px;
+      width: 300px;
+      color: white;
+      text-align: center;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 8px;
+      border: none;
+      outline: none;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border: none;
+      border-radius: 8px;
+      background: #ff7a18;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #ff5200;
+    }
+
+    #userData {
+      margin-top: 15px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <h2>Firebase Auth</h2>
+
+  <input type="text" id="name" placeholder="Name">
+  <input type="email" id="email" placeholder="Email">
+  <input type="password" id="password" placeholder="Password">
+
+  <button id="signup">Sign Up</button>
+  <button id="login">Login</button>
+
+  <p id="message"></p>
+
+  <div id="userData"></div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { 
+    getAuth, 
+    createUserWithEmailAndPassword, 
+    signInWithEmailAndPassword,
+    onAuthStateChanged
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+  import { 
+    getFirestore, 
+    setDoc, 
+    doc, 
+    getDoc 
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  // 🔥 YOUR CONFIG HERE
+  const firebaseConfig = {
+      apiKey: "AIzaSyALMeqIn_IdJ7AbLWRsO1NViVWpYJIzjL0",
+  authDomain: "janhavi-cam.firebaseapp.com",
+  projectId: "janhavi-cam",
+  storageBucket: "janhavi-cam.firebasestorage.app",
+  messagingSenderId: "488424670264",
+  appId: "1:488424670264:web:9ea359bb585a7600bf52cd",
+  measurementId: "G-724VGQHCFS"
+
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  const msg = document.getElementById("message");
+  const userDataDiv = document.getElementById("userData");
+
+  // 🆕 SIGNUP
+  document.getElementById("signup").onclick = async () => {
+    const name = document.getElementById("name").value;
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+
+    try {
+      const userCred = await createUserWithEmailAndPassword(auth, email, password);
+
+      // Save extra data to Firestore
+      await setDoc(doc(db, "users", userCred.user.uid), {
+        name: name,
+        email: email
+      });
+
+      msg.innerText = "Signup successful!";
+    } catch (err) {
+      msg.innerText = err.message;
+    }
+  };
+
+  // 🔑 LOGIN
+  document.getElementById("login").onclick = async () => {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      msg.innerText = "Login successful!";
+    } catch (err) {
+      msg.innerText = err.message;
+    }
+  };
+
+  // 👀 LISTEN AUTH STATE + FETCH USER DATA
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      const docRef = doc(db, "users", user.uid);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+
+        userDataDiv.innerHTML = `
+          <p><b>Name:</b> ${data.name}</p>
+          <p><b>Email:</b> ${data.email}</p>
+          <p style="color:lightgreen;">Authenticated ✅</p>
+        `;
+      }
+    } else {
+      userDataDiv.innerHTML = "Not logged in";
+    }
+  });
+
+</script>
+
+</body>
+</html>
